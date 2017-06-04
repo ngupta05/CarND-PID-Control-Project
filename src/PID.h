@@ -9,6 +9,7 @@ public:
   double p_error;
   double i_error;
   double d_error;
+  double t_error;
 
   /*
   * Coefficients
@@ -17,6 +18,7 @@ public:
   double Ki;
   double Kd;
 
+  int n;
   /*
   * Constructor
   */

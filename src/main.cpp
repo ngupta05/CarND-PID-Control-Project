@@ -2,6 +2,7 @@
 #include <iostream>
 #include "json.hpp"
 #include "PID.h"
+#include "Twiddle.h"
 #include <math.h>
 
 // for convenience
@@ -33,6 +34,9 @@ int main()
   uWS::Hub h;
 
   PID pid;
+  Twiddle tw;
+  pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
+
   // TODO: Initialize the pid variable.
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
@@ -57,9 +61,15 @@ int main()
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
+          pid.UpdateError(cte);
+          steer_value = -pid.Kp * pid.p_error -pid.Kd * pid.d_error
+        		  -pid.Ki * pid.i_error;
+          steer_value = std::min(std::max(-1.0, steer_value), 1.0);
+
           
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          std::cout << "Params: " << pid.Kp << "," << pid.Kd << "," << pid.Ki << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
@@ -91,8 +101,16 @@ int main()
     }
   });
 
-  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
+  h.onConnection([&h, &pid, &tw](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
+    static bool firstTime = true;
+
+    if (!firstTime) {
+    	tw.updateError(pid.TotalError());
+    	pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
+    }
+
+    firstTime = false;
   });
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
