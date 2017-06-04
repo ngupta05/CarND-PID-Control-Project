@@ -36,10 +36,11 @@ int main()
   PID pid;
   Twiddle tw;
   pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
+  int count = 1;
 
   // TODO: Initialize the pid variable.
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid, &tw,&count](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -68,15 +69,22 @@ int main()
 
           
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
-          std::cout << "Params: " << pid.Kp << "," << pid.Kd << "," << pid.Ki << std::endl;
+          //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          if (count % 500 == 0) {
+        	  tw.updateError(pid.TotalError());
+              pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
+              std::cout << "Resetting Params: " << pid.Kp << "," << pid.Kd << "," << pid.Ki << std::endl;
+              std::string msg = "42[\"reset\",{}]";
+              ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          }
+          count++;
         }
       } else {
         // Manual driving
@@ -101,16 +109,8 @@ int main()
     }
   });
 
-  h.onConnection([&h, &pid, &tw](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
+  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
-    static bool firstTime = true;
-
-    if (!firstTime) {
-    	tw.updateError(pid.TotalError());
-    	pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
-    }
-
-    firstTime = false;
   });
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {

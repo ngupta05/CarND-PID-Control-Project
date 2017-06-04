@@ -1,4 +1,5 @@
 #include "PID.h"
+#include <cmath>
 
 using namespace std;
 
@@ -14,7 +15,7 @@ void PID::Init(double Kp, double Ki, double Kd) {
 	this->Kp = Kp;
 	this->Ki = Ki;
 	this->Kd = Kd;
-	this->i_error = this->d_error = this->t_error = 0;
+	this->p_error = this->i_error = this->d_error = this->t_error = 0;
 	this->n = 0;
 }
 
