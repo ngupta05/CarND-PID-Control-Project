@@ -56,16 +56,23 @@ int main()
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
-          /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
-          * NOTE: Feel free to play around with the throttle and speed. Maybe use
-          * another PID controller to control the speed!
-          */
+
           pid.UpdateError(cte);
           steer_value = -pid.Kp * pid.p_error -pid.Kd * pid.d_error
         		  -pid.Ki * pid.i_error;
           steer_value = std::min(std::max(-1.0, steer_value), 1.0);
+
+          // Reflection
+          /*P portion of the controller helps in major portion of steering
+          control, while D helps in smoothing control as car approaches ideal state
+          affect of D in this implementation could be better, but will require speed
+          control as well. I portion doesn't play much role as the car doesn't seem to have
+          a bias/drift.
+
+          Final parameters were chosen using twiddle algorithm. Initially I trained on 200
+          frames worth of data, resetting the simulator after 200 frames. When decent
+          results were achieved, I increased the frame count to 300 and so on till a complete
+          lap was achieved (1000 frames)*/
 
           
           // DEBUG
@@ -77,13 +84,13 @@ int main()
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-          if (count % 1000 == 0) {
-        	  tw.updateError(pid.TotalError());
-              pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
-              std::cout << "Resetting Params: " << pid.Kp << "," << pid.Kd << "," << pid.Ki << std::endl;
-              std::string msg = "42[\"reset\",{}]";
-              ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-          }
+//          if (count % 1000 == 0) {
+//        	  tw.updateError(pid.TotalError());
+//              pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
+//              std::cout << "Resetting Params: " << pid.Kp << "," << pid.Kd << "," << pid.Ki << std::endl;
+//              std::string msg = "42[\"reset\",{}]";
+//              ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+//          }
           count++;
         }
       } else {
