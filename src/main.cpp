@@ -77,7 +77,7 @@ int main()
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-          if (count % 500 == 0) {
+          if (count % 1000 == 0) {
         	  tw.updateError(pid.TotalError());
               pid.Init(tw.getKp(), tw.getKi(), tw.getKd());
               std::cout << "Resetting Params: " << pid.Kp << "," << pid.Kd << "," << pid.Ki << std::endl;
